@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, ScrollView } from 'react-native';
+import { Image, ScrollView, Alert } from 'react-native';
 
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
@@ -35,6 +35,7 @@ interface Food {
   price: number;
   thumbnail_url: string;
   formattedPrice: string;
+  category: number;
 }
 
 interface Category {
@@ -55,26 +56,54 @@ const Dashboard: React.FC = () => {
 
   async function handleNavigate(id: number): Promise<void> {
     // Navigate do ProductDetails page
+    navigation.navigate('FoodDetails', { id });
   }
-
-  useEffect(() => {
-    async function loadFoods(): Promise<void> {
-      // Load Foods from API
-    }
-
-    loadFoods();
-  }, [selectedCategory, searchValue]);
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
       // Load categories from API
+      const categ = await api.get('categories');
+      setCategories(categ.data);
     }
 
     loadCategories();
   }, []);
 
+  useEffect(() => {
+    async function loadFoods(): Promise<void> {
+      // Load Foods from API
+      let routeText = '';
+
+      if (selectedCategory) {
+        routeText += `?category_like=${selectedCategory}`;
+      } else {
+        routeText += `?name_like=${searchValue}`;
+      }
+
+      const response = await api.get<Food[]>(`foods${routeText}`);
+
+      setFoods(
+        response.data.map(item => {
+          return Object.assign(item, {
+            formattedPrice: formatValue(item.price),
+          });
+        }),
+      );
+    }
+
+    loadFoods();
+  }, [selectedCategory, searchValue]);
+
   function handleSelectCategory(id: number): void {
-    // Select / deselect category
+    /*  // Select / deselect category
+    api.get(`foods?category_like=${id}`).then(resp => {
+      setFoods(resp.data);
+    }); */
+    if (selectedCategory === id) {
+      setSelectedCategory(0);
+    } else {
+      setSelectedCategory(id);
+    }
   }
 
   return (
